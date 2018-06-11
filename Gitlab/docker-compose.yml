@@ -1,0 +1,60 @@
+version: '3.4'
+
+services:
+    gitlab:
+        image: 'gitlab/gitlab-ce:10.8.4-ce.0'
+        restart: on-failure
+        hostname: 'hostname'
+        depends_on:
+            - postgres
+            - redis
+        volumes:
+            - /srv/gitlab/logs:/var/log/gitlab
+            - /srv/gitlab/data:/var/opt/gitlab       
+        environment:
+            GITLAB_OMNIBUS_CONFIG: |
+                external_url 'https://example.com'
+                letsencrypt['contact_emails'] = ['foo@email.com']
+                letsencrypt['enable'] = true
+                letsencrypt['auto_renew_hour'] = "12"
+                letsencrypt['auto_renew_minute'] = "30"
+                letsencrypt['auto_renew_day_of_month'] = "*/7"
+
+                postgresql['enable'] = false
+                gitlab_rails['initial_root_password'] = "password"
+
+                gitlab_rails['gitlab_ssh_host'] = 'example.com'
+                gitlab_rails['gitlab_shell_ssh_port'] = 10022
+
+                gitlab_rails['db_adapter'] = 'postgresql'
+                gitlab_rails['db_encoding'] = 'utf8'
+                gitlab_rails['db_host'] = "postgres"
+                gitlab_rails['db_port'] = 5432
+                gitlab_rails['db_database'] = "gitlab_db"
+                gitlab_rails['db_username'] = "gitlab_user"
+                gitlab_rails['db_password'] = 'postgres'
+
+                gitlab_rails['redis_host'] = "redis"
+                gitlab_rails['redis_port'] = 6379
+
+
+        ports:
+            - "10022:22"
+            - "443:443"
+            - "80:80"
+
+
+
+    postgres:
+        image: postgres
+        restart: always
+        environment:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: gitlab_user
+          POSTGRES_DB: gitlab_db
+
+    redis:
+        restart: always
+        image: redis:4.0.9
+        volumes:
+            - /srv/docker/gitlab/redis:/var/lib/redis
